@@ -4,7 +4,8 @@ ARG VERSION=0.1.0
 
 COPY exporter /opt/hive-exporter
 
-RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r /opt/hive-exporter/requirements.txt
+RUN apk add --update --no-cache aws-cli && \
+    pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r /opt/hive-exporter/requirements.txt
 
 RUN mkdir -p /etc/hive-exporter && \
     chmod 0755 /opt/hive-exporter/entrypoint.sh /opt/hive-exporter/exporter.py && \
