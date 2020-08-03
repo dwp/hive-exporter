@@ -18,7 +18,10 @@ class JsonPathCollector(object):
 
   def collect(self):
     config = self._config
-    result = json.loads(response = self._s3_client.get_object(Bucket=config['metrics_bucket'], Key=config['metrics_key'])["Body"].read().decode("utf8"))
+    bucket = config['metrics_bucket']
+    key = config['metrics_key']
+    json_file = self._s3_client.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf8")
+    result = json.loads(json_file)
     result_tree = Tree(result)
     for metric_config in config['metrics']:
       metric_name = "{}_{}".format(config['metric_name_prefix'], metric_config['name'])
@@ -39,7 +42,7 @@ if __name__ == "__main__":
     log_level = config.get('log_level', DEFAULT_LOG_LEVEL)
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.getLevelName(log_level.upper()))
     exporter_port = config.get('exporter_port', DEFAULT_PORT)
-    logging.debug("Config %s", config)
+    logging.info("Config %s", config)
     logging.info('Starting server on port %s', exporter_port)
     start_http_server(exporter_port)
     REGISTRY.register(JsonPathCollector(config))
