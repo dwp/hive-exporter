@@ -1,12 +1,12 @@
 #!/bin/sh
 set -e
 echo "INFO: Checking container configuration..."
-if [ -z "${HIVE_CONFIG_S3_BUCKET}" -o -z "${HIVE_CONFIG_S3_PREFIX}" ]; then
-  echo "ERROR: HIVE_CONFIG_S3_BUCKET and HIVE_CONFIG_S3_PREFIX environment variables must be provided"
+if [ -z "${HIVE_EXPORTER_CONFIG_S3_BUCKET}" -o -z "${HIVE_EXPORTER_CONFIG_S3_PREFIX}" ]; then
+  echo "ERROR: HIVE_EXPORTER_CONFIG_S3_BUCKET and HIVE_EXPORTER_CONFIG_S3_PREFIX environment variables must be provided"
   exit 1
 fi
 
-S3_URI="s3://${PROMETHEUS_CONFIG_S3_BUCKET}/${PROMETHEUS_CONFIG_S3_PREFIX}"
+S3_URI="s3://${HIVE_EXPORTER_CONFIG_S3_BUCKET}/${HIVE_EXPORTER_CONFIG_S3_PREFIX}"
 
 # If either of the AWS credentials variables were provided, validate them
 if [ -n "${AWS_ACCESS_KEY_ID}${AWS_SECRET_ACCESS_KEY}" ]; then
