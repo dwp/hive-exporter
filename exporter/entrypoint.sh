@@ -49,6 +49,4 @@ echo "INFO: Copying hive exporter configuration file(s) from ${S3_URI} to /etc/h
 aws ${PROFILE_OPTION} s3 sync ${S3_URI}/ /etc/hive-exporter/
 
 echo "INFO: Starting hive exporter..."
-exec python -m SimpleHTTPServer 8000
-        /bin/json_exporter \
-        http://localhost:8000/metrics.json /etc/json_exporter/config.yml
+exec python /opt/hive-exporter/exporter.py /etc/hive-exporter/config.yml
