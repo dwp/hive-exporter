@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  IMAGE_NAME: dwpdigital/example
+  IMAGE_NAME: dwpdigital/hive-exporter
 
 jobs:
   get-publish-version:

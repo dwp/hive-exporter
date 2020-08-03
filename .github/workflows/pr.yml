@@ -3,7 +3,7 @@ name: High vulns Snyk PR scan
 on: pull_request
 
 env:
-  IMAGE_NAME: dwpdigital/example
+  IMAGE_NAME: dwpdigital/hive-exporter
 
 jobs:
   docker-build-and-scan:
