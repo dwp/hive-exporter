@@ -2,7 +2,6 @@ import os
 import threading
 import time
 import yaml
-import socket
 import boto3
 import json
 import requests
@@ -60,5 +59,4 @@ if __name__ == "__main__":
     try:
         start_http_server(os.getenv("PORT_NUMBER", 3392))
     except KeyboardInterrupt:
-        server.socket.close()
         thread.join()
