@@ -1,49 +1,64 @@
-import json
+import os
+import threading
 import time
-import boto3
-from prometheus_client import start_http_server
-from prometheus_client.core import GaugeMetricFamily, REGISTRY
-import argparse
 import yaml
-from objectpath import Tree
-import logging
+import socket
+import boto3
+import json
+import requests
+from jsonpath_ng import jsonpath, parse
+from prometheus_client import Gauge, REGISTRY, start_http_server
 
-DEFAULT_PORT=3392
-DEFAULT_LOG_LEVEL='info'
+metrics = {}
+paths = {}
+config = {}
+s3_client = boto3.client("s3")
+emr_client = boto3.client("emr")
 
-class JsonPathCollector(object):
-  def __init__(self, config):
-    self._config = config
-    self._s3_client = boto3.client("s3")
-
-  def collect(self):
-    config = self._config
+def scrape_http():
+    clusters = emr_client.list_clusters(ClusterStates=('STARTING','BOOTSTRAPPING','RUNNING','WAITING'))
+    for cluster in clusters['Clusters']:
+        if cluster['Name'] == config['cluster_name']:
+            hostname = emr_client.describe_cluster(ClusterId=cluster['Id'])['Cluster']['MasterPublicDnsName']
+    response = requests.get("http://" + hostname + "/jmx")
+    return response.json()
+  
+def scrape_s3():
     bucket = config['metrics_bucket']
     key = config['metrics_key']
-    json_file = self._s3_client.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf8")
-    result = json.loads(json_file)
-    result_tree = Tree(result)
-    for metric_config in config['metrics']:
-      metric_name = "{}_{}".format(config['metric_name_prefix'], metric_config['name'])
-      metric_description = metric_config.get('description', '')
-      metric_path = metric_config['path']
-      value = result_tree.execute(metric_path)
-      logging.debug("metric_name: {}, value for '{}' : {}".format(metric_name, metric_path, value))
-      metric = GaugeMetricFamily(metric_name, metric_description, value=value)
-      yield metric
+    json_file = s3_client.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf8")
+    return json.loads(json_file)
 
+def collect(): 
+    for metric_config in config['metrics']:
+        metric_name = "{}_{}".format(config['metric_name_prefix'], metric_config['name'])
+        metric_description = metric_config.get('description', '')
+        metrics[metric_name] = Gauge(metric_name, metric_description)
+        paths[metric_name] = metric_config['path']
+
+def gather_data():
+    collect()
+    while True:
+        time.sleep(5)
+        if 'metrics_bucket' in config:
+            result = scrape_s3()
+        else:
+            result = scrape_http()
+        for metric in metrics:
+            value = parse(paths[metric]).find(result)
+            if not bool(value):
+                continue
+            print(metric + ": " + str(value[0].value))
+            value = value[0].value
+            metrics[metric].set(value)
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Expose metrics by jsonpath for configured url')
-  parser.add_argument('config_file_path', help='Path of the config file')
-  args = parser.parse_args()
-  with open(args.config_file_path) as config_file:
-    config = yaml.load(config_file)
-    log_level = config.get('log_level', DEFAULT_LOG_LEVEL)
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.getLevelName(log_level.upper()))
-    exporter_port = config.get('exporter_port', DEFAULT_PORT)
-    logging.info("Config %s", config)
-    logging.info('Starting server on port %s', exporter_port)
-    start_http_server(exporter_port)
-    REGISTRY.register(JsonPathCollector(config))
-  while True: time.sleep(5)
+    with open(os.getenv("CONFIG_PATH", "config.yml")) as config_file:
+        config = yaml.load(config_file)
+    thread = threading.Thread(target=gather_data)
+    thread.start()
+    try:
+        start_http_server(os.getenv("PORT_NUMBER", 3392))
+    except KeyboardInterrupt:
+        server.socket.close()
+        thread.join()
