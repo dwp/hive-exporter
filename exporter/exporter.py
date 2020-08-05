@@ -19,7 +19,8 @@ def scrape_http():
     for cluster in clusters['Clusters']:
         if cluster['Name'] == config['cluster_name']:
             hostname = emr_client.describe_cluster(ClusterId=cluster['Id'])['Cluster']['MasterPublicDnsName']
-    response = requests.get("http://" + hostname + "/jmx")
+    response = requests.get("http://" + hostname + ":16010/jmx")
+    print(response)
     return response.json()
   
 def scrape_s3():
@@ -47,12 +48,11 @@ def gather_data():
             value = parse(paths[metric]).find(result)
             if not bool(value):
                 continue
-            print(metric + ": " + str(value[0].value))
             value = value[0].value
             metrics[metric].set(value)
 
 if __name__ == "__main__":
-    with open(os.getenv("CONFIG_PATH", "config.yml")) as config_file:
+    with open("/etc/json-exporter/" + os.getenv("CONFIG_FILE", "config.yml")) as config_file:
         config = yaml.load(config_file)
     thread = threading.Thread(target=gather_data)
     thread.start()

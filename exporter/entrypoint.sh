@@ -1,12 +1,12 @@
 #!/bin/sh
 set -e
 echo "INFO: Checking container configuration..."
-if [ -z "${HIVE_EXPORTER_CONFIG_S3_BUCKET}" -o -z "${HIVE_EXPORTER_CONFIG_S3_PREFIX}" ]; then
-  echo "ERROR: HIVE_EXPORTER_CONFIG_S3_BUCKET and HIVE_EXPORTER_CONFIG_S3_PREFIX environment variables must be provided"
+if [ -z "${JSON_EXPORTER_CONFIG_S3_BUCKET}" -o -z "${JSON_EXPORTER_CONFIG_S3_PREFIX}" ]; then
+  echo "ERROR: JSON_EXPORTER_CONFIG_S3_BUCKET and JSON_EXPORTER_CONFIG_S3_PREFIX environment variables must be provided"
   exit 1
 fi
 
-S3_URI="s3://${HIVE_EXPORTER_CONFIG_S3_BUCKET}/${HIVE_EXPORTER_CONFIG_S3_PREFIX}"
+S3_URI="s3://${JSON_EXPORTER_CONFIG_S3_BUCKET}/${JSON_EXPORTER_CONFIG_S3_PREFIX}"
 
 # If either of the AWS credentials variables were provided, validate them
 if [ -n "${AWS_ACCESS_KEY_ID}${AWS_SECRET_ACCESS_KEY}" ]; then
@@ -45,8 +45,8 @@ else
   echo "INFO: Using attached IAM roles/instance profiles to authenticate with S3 as no AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY have been provided"
 fi
 
-echo "INFO: Copying hive exporter configuration file(s) from ${S3_URI} to /etc/hive-exporter..."
-aws ${PROFILE_OPTION} s3 sync ${S3_URI}/ /etc/hive-exporter/
+echo "INFO: Copying json exporter configuration file(s) from ${S3_URI} to /etc/json-exporter..."
+aws ${PROFILE_OPTION} s3 sync ${S3_URI}/ /etc/json-exporter/
 
-echo "INFO: Starting hive exporter..."
-exec python /opt/hive-exporter/exporter.py /etc/hive-exporter/config.yml
+echo "INFO: Starting json exporter..."
+exec python /opt/json-exporter/exporter.py

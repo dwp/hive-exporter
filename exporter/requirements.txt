@@ -1,5 +1,5 @@
-pytz
-objectpath
+requests
+jsonpath-ng
 prometheus_client
-pyYAML
+pyyaml
 boto3
